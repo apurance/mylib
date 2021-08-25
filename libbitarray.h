@@ -48,6 +48,7 @@ static inline void bitarray_switch(const Bitarray *ba, size_t idx)
 
 // API
 void bitarray_init(Bitarray *ba, size_t len);
+void bitarray_init_memory(Bitarray *ba, const uint8_t *mem, size_t len);
 void bitarray_free(Bitarray *ba);
 uint8_t* bitarray_move(Bitarray *ba);
 uint8_t bitarray_equal(Bitarray *x, Bitarray *y);
@@ -59,7 +60,6 @@ void bitarray_set_zeros(Bitarray *ba, size_t len);
 void bitarray_set_ones(Bitarray *ba, size_t len);
 void bitarray_set_rands(Bitarray *ba, size_t len, unsigned int seed);
 void bitarray_set_str(Bitarray *ba, const char *str, size_t len);
-void bitarray_set_memory(Bitarray *ba, const uint8_t *mem, size_t len);
 size_t bitarray_count(const Bitarray *ba, size_t start, size_t end);
 void bitarray_push(Bitarray *ba, uint8_t b);
 void bitarray_repeat_push(Bitarray *ba, uint8_t b, size_t repetation);

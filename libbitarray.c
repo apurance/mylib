@@ -75,6 +75,16 @@ void bitarray_init(Bitarray *ba, size_t len)
     }
 }
 
+void bitarray_init_memory(Bitarray *ba, const uint8_t *mem, size_t len)
+{
+    ba->num = len >> 3;
+    ba->bit = (len - 1) & 7;
+    if (len & 7)
+        ba->num++;
+    ba->capacity = ba->num;
+    ba->array = mem;
+}
+
 void bitarray_free(Bitarray *ba)
 {
     if (ba->capacity)
@@ -291,21 +301,6 @@ void bitarray_set_str(Bitarray *ba, const char *str, size_t len)
         }
     }
     BITARRAY_TAIL_NORM(ba);
-    ba->num = new_num;
-    ba->bit = new_bit;
-}
-
-void bitarray_set_memory(Bitarray *ba, const uint8_t *mem, size_t len)
-{
-    size_t new_num = len >> 3;
-    uint8_t new_bit = (len - 1) & 7;
-
-    if (len & 7)
-        new_num++;
-    if (ba->capacity)
-        free(ba->array);
-    ba->array = mem;
-    ba->capacity = new_num;
     ba->num = new_num;
     ba->bit = new_bit;
 }
