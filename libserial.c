@@ -64,14 +64,15 @@ void unserial_bitarray(Bitarray *ba, Serial *sel)
     uint8_t new_bit = (len - 1) & 7;
     if (len & 7)
         new_num++;
-    if (ba->capacity)
-        free(ba->array);
-    ba->array = malloc(new_num);
-
+    if (ba->capacity < new_num){
+        if (ba->capacity)
+            free(ba->array);
+        ba->array = malloc(new_num);
+        ba->capacity = new_num;
+    }
     memcpy(ba->array, sel->quence, new_num);
     sel->quence += new_num;
 
-    ba->capacity = new_num;
     ba->num = new_num;
     ba->bit = new_bit;
 }
