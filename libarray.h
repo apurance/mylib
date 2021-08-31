@@ -48,7 +48,6 @@ void array_free(Array *a);
 int array_reserve(Array *a, size_t capacity);
 int array_equal(const Array *x, const Array *y, int (*equal)(void *x, void *y));
 void array_push(Array *a, void *item);
-void array_sort(const Array *a, void (*swap)(void *a, void *b), int ascend);
 
 
 #define ARRAY_INIT(a, len, type_t) array_init(a, len, sizeof(type_t))

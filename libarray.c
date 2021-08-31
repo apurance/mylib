@@ -100,7 +100,3 @@ void array_push(Array *a, void *item)
     memcpy((void *)(((uint8_t *)a->array) + (a->len - 1) * a->type_size), item, a->type_size);
 }
 
-void array_sort(const Array *a, void (*swap)(void *a, void *b), int ascend)
-{
-    // TODO
-}
