@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define TMP_SIZE 128
+#define BYTEP_AT(p, idx, type_size) ((uint8_t *)(p) + (idx) * (type_size))
 
 static size_t g_type_size;
 
@@ -77,7 +77,7 @@ void select_sort(void *array, size_t len, size_t type_size,
                  fn_cmp cmp, fn_swap swap)
 {
     uint8_t *i, *j, *k;
-    uint8_t *end = (uint8_t *)array + (len - 1) * type_size;
+    uint8_t *end = BYTEP_AT(array, len - 1, type_size);
 
     if (!swap){
         swap = swap_check(type_size);
@@ -106,7 +106,7 @@ void insert_sort(void *array, size_t len, size_t type_size,
                  fn_cmp cmp, void *tmp)
 {
     uint8_t *i, *j;
-    uint8_t *end = (uint8_t *)array + (len - 1) * type_size;
+    uint8_t *end = BYTEP_AT(array, len - 1, type_size);
     
     for (i = (uint8_t *)array + type_size; i <= end; i += type_size){
         // back search
@@ -126,22 +126,22 @@ void insert_sort(void *array, size_t len, size_t type_size,
 }
 
 static
-void _merge(void *array, void *aux, size_t low, size_t mid, size_t high, size_t type_size, fn_cmp cmp)
+void _merge(void *array, void *aux, size_t mid, size_t end, size_t type_size, fn_cmp cmp)
 {
-    uint8_t *i = (uint8_t *)aux + low * type_size;
-    uint8_t *j = (uint8_t *)aux + (mid + 1) * type_size;
-    uint8_t *midp = (uint8_t *)aux + mid * type_size;
-    uint8_t *highp = (uint8_t *)aux + high * type_size;
-    uint8_t *k = (uint8_t *)array + low * type_size;
-    uint8_t *end = (uint8_t *)array + high * type_size;
+    uint8_t *i = aux;
+    uint8_t *j = BYTEP_AT(aux, mid + 1, type_size);
+    uint8_t *midp = BYTEP_AT(aux, mid, type_size);
+    uint8_t *highp = BYTEP_AT(aux, end, type_size);
+    uint8_t *k = array;
+    uint8_t *kend = BYTEP_AT(array, end, type_size);
 
-    for (; k <= end; k += type_size){
+    for (; k <= kend; k += type_size){
         if (i > midp){
-            memcpy(k, j, end - k + type_size);
+            memcpy(k, j, kend - k + type_size);
             break;
         }
         if (j > highp){
-            memcpy(k, i, end - k + type_size);
+            memcpy(k, i, kend - k + type_size);
             break;
         }
         if (cmp(i, j) > 0){
@@ -156,18 +156,20 @@ void _merge(void *array, void *aux, size_t low, size_t mid, size_t high, size_t 
 }
 
 static
-void _merge_sort_recur(void *array, void *aux, size_t low, size_t high,size_t type_size, fn_cmp cmp)
+void _merge_sort_recur(void *array, void *aux, size_t end, size_t type_size, fn_cmp cmp)
 {
-    if (low >= high)
+    if (end < 4){
+        insert_sort(array, end + 1, type_size, cmp, aux);
         return;
-    size_t mid = low + ((high - low) >> 1);
-    _merge_sort_recur(aux, array, low, mid, type_size, cmp);
-    _merge_sort_recur(aux, array, mid + 1, high, type_size, cmp);
-    if (cmp((uint8_t *)aux + mid * type_size, (uint8_t *)aux + (mid + 1) * type_size) <= 0){
-        memcpy((uint8_t *)array + low * type_size, (uint8_t *)aux + low * type_size, (high - low + 1) * type_size);
+    }
+    size_t mid = end >> 1;
+    _merge_sort_recur(aux, array, mid, type_size, cmp);
+    _merge_sort_recur(BYTEP_AT(aux, mid + 1, type_size), BYTEP_AT(array, mid + 1, type_size), end - mid - 1, type_size, cmp);
+    if (cmp(BYTEP_AT(aux, mid, type_size), BYTEP_AT(aux, mid + 1, type_size)) <= 0){
+        memcpy(array, aux, (end + 1) * type_size);
     }
     else{
-        _merge(array, aux, low, mid, high, type_size, cmp);
+        _merge(array, aux, mid, end, type_size, cmp);
     }
 }
 
@@ -175,7 +177,7 @@ void merge_sort(void *array, size_t len, size_t type_size,
                 fn_cmp cmp, void *aux)
 {
     memcpy(aux, array, len * type_size);
-    _merge_sort_recur(array, aux, 0, len - 1, type_size, cmp);
+    _merge_sort_recur(array, aux, len - 1, type_size, cmp);
 }
 
 
@@ -184,7 +186,7 @@ void shuffle(void *array, size_t len, size_t type_size,
              fn_swap swap)
 {
     uint8_t *i = array, *j;
-    uint8_t *end = (uint8_t *)array + (len - 1) * type_size;
+    uint8_t *end = BYTEP_AT(array, len - 1, type_size);
 
     if (!swap){
         swap = swap_check(type_size);
@@ -194,4 +196,18 @@ void shuffle(void *array, size_t len, size_t type_size,
         j = i + randint(len--) * type_size;
         swap(i, j);
     }
+}
+
+int sort_check(void *array, size_t len, size_t type_size,
+               fn_cmp cmp)
+{
+    uint8_t *i = array;
+    uint8_t *end = BYTEP_AT(array, len - 1, type_size);
+
+    for (; i < end; i += type_size){
+        if (cmp(i, i + type_size) > 0){
+            return 0;
+        }
+    }
+    return 1;
 }

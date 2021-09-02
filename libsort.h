@@ -22,5 +22,7 @@ void merge_sort(void *array, size_t len, size_t type_size,
 void shuffle(void *array, size_t len, size_t type_size,
                  size_t (*randint)(size_t bound),
                  fn_swap swap);
+int sort_check(void *array, size_t len, size_t type_size,
+               fn_cmp cmp);
 
 #endif
