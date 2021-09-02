@@ -3,6 +3,11 @@
 #include <string.h>
 
 #define BYTEP_AT(p, idx, type_size) ((uint8_t *)(p) + (idx) * (type_size))
+#define MIN(a, b) ({ \
+    typeof(a) __min1__ = (a); \
+    typeof(b) __min2__ = (b); \
+    (void)(&__min1__ == &__min2__); \
+    __min1__ < __min2__ ? __min1__ : __min2__;})
 
 static size_t g_type_size;
 
@@ -135,6 +140,11 @@ void _merge(void *array, void *aux, size_t mid, size_t end, size_t type_size, fn
     uint8_t *k = array;
     uint8_t *kend = BYTEP_AT(array, end, type_size);
 
+    if (cmp(j, midp) >= 0){
+        memcpy(array, aux, (end + 1) * type_size);
+        return;
+    }
+
     for (; k <= kend; k += type_size){
         if (i > midp){
             memcpy(k, j, kend - k + type_size);
@@ -155,31 +165,35 @@ void _merge(void *array, void *aux, size_t mid, size_t end, size_t type_size, fn
     }
 }
 
-static
-void _merge_sort_recur(void *array, void *aux, size_t end, size_t type_size, fn_cmp cmp)
-{
-    if (end < 4){
-        insert_sort(array, end + 1, type_size, cmp, aux);
-        return;
-    }
-    size_t mid = end >> 1;
-    _merge_sort_recur(aux, array, mid, type_size, cmp);
-    _merge_sort_recur(BYTEP_AT(aux, mid + 1, type_size), BYTEP_AT(array, mid + 1, type_size), end - mid - 1, type_size, cmp);
-    if (cmp(BYTEP_AT(aux, mid, type_size), BYTEP_AT(aux, mid + 1, type_size)) <= 0){
-        memcpy(array, aux, (end + 1) * type_size);
-    }
-    else{
-        _merge(array, aux, mid, end, type_size, cmp);
-    }
-}
-
 void merge_sort(void *array, size_t len, size_t type_size,
-                fn_cmp cmp, void *aux)
+                 fn_cmp cmp, void *aux)
 {
-    memcpy(aux, array, len * type_size);
-    _merge_sort_recur(array, aux, len - 1, type_size, cmp);
-}
+    size_t block = 4; // length for insert sort
+    size_t i;
+    
+    int aux_swaped = 0;
+    for (i = 0; i < len - block; i += block){
+        insert_sort(BYTEP_AT(array, i, type_size), block, type_size, cmp, aux);
+    }
+    if ((len - i) > 1){
+        insert_sort(BYTEP_AT(array, i, type_size), len - i, type_size, cmp, aux);
+    }
+    
+    for (; block < len; block <<= 1){
+        u64_swap(&array, &aux);
+        aux_swaped ^= 1;
+        for (i = 0; i < len - block; i += block << 1){
+            _merge(BYTEP_AT(array, i, type_size), BYTEP_AT(aux, i, type_size), block - 1, MIN((block << 1) - 1, len - i - 1), type_size, cmp);
+        }
+        if (i < len){
+            memcpy(BYTEP_AT(array, i, type_size), BYTEP_AT(aux, i, type_size), (len - i) * type_size);
+        }
+    }
 
+    if (aux_swaped){
+        memcpy(aux, array, len * type_size);
+    }
+}
 
 void shuffle(void *array, size_t len, size_t type_size,
              size_t (*randint)(size_t bound),
