@@ -25,4 +25,6 @@ void shuffle(void *array, size_t len, size_t type_size,
 int sort_check(void *array, size_t len, size_t type_size,
                fn_cmp cmp);
 
+void int_qsort(int array[], int low, int high);
+
 #endif

@@ -101,10 +101,152 @@ void select_sort(void *array, size_t len, size_t type_size,
     }
 }
 
+static inline
+void _pivot(void *array, size_t len, size_t type_size, fn_cmp cmp, fn_swap swap)
+{
+    size_t mid = len >> 1;
+    if (cmp(array, BYTEP_AT(array, mid, type_size)) > 0){
+        swap(array, BYTEP_AT(array, mid, type_size));
+    }
+    if (cmp(array, BYTEP_AT(array, len - 1, type_size)) > 0){
+        swap(array, BYTEP_AT(array, len - 1, type_size));
+    }
+    if (cmp(BYTEP_AT(array, mid, type_size), BYTEP_AT(array, len - 1, type_size)) > 0){
+        swap(BYTEP_AT(array, mid, type_size), BYTEP_AT(array, len - 1, type_size));
+    }
+    swap(BYTEP_AT(array, mid, type_size), BYTEP_AT(array, len - 2, type_size));
+}
+
+
+
 void quick_sort(void *array, size_t len, size_t type_size,
                 fn_cmp cmp, fn_swap swap)
 {
     // TODO
+}
+
+void int_swap(int array[], int i, int j)
+{
+    int tmp = array[i];
+    array[i] = array[j];
+    array[j] = tmp;
+}
+
+void reverse(int array[], int low, int high, int len)
+{
+    if (len <= 0)
+        return;
+    for (int i = 0; i < len; i++){
+        int_swap(array, low+i, high-i);
+    }
+}
+
+int _dealpivot(int array[], int low, int high)
+{
+    int mid = low + ((high - low) >> 1);
+
+    if (array[mid] > array[high]){
+        int_swap(array, mid, high);
+    }
+    if (array[low] > array[high]){
+        int_swap(array, low, high);
+    }
+    if (array[mid] > array[low]){
+        int_swap(array, mid, low);
+    }
+    return array[low];
+}
+
+void int_qsort(int array[], int low, int high)
+{
+    if (high - low <= 6){
+        // insert
+        for (int i = low + 1; i <= high; i++){
+            int tmp = array[i];
+            int j = i;
+            for (; j > low && array[j-1] > tmp; j--){
+                array[j] = array[j-1];
+            }
+            array[j] = tmp;
+        }
+        return;
+    }
+    
+    /*
+     * p|xxxx...xxxxt
+     * t >= p must be true
+     */
+    int pivot = _dealpivot(array, low, high);
+    
+    int i = low;
+    int j = high;
+ 
+    int leftbound = low + 1;
+    int rightbound = high;
+    for(;;){
+        // from left
+        for (;;){
+            i++;
+            if (array[i] < pivot){
+                continue;
+            }
+            if (array[i] > pivot){
+                break;
+            }
+            int k = i;
+            int break_flag = 0;
+            for (;;){
+                i++;
+                if (i > high){
+                    break_flag = 1;
+                    break;
+                }
+                if (array[i] != pivot){
+                    if (array[i] > pivot){
+                        break_flag = 1;
+                    }
+                    break;
+                }
+            }
+            reverse(array, leftbound, i - 1, MIN(i - k, k - leftbound));
+            leftbound += i - k;
+            if (break_flag){
+                break;
+            }
+        }
+
+        // from right
+        while (j > i) {
+            if (array[j] > pivot){
+                j--;
+                continue;
+            }
+            if (array[j] < pivot){
+                break;
+            }
+            int k = j;
+            while(array[--j] == pivot);
+            reverse(array, j + 1, rightbound, MIN(k - j, rightbound - k));
+            rightbound -= k - j;
+        }
+
+        if (i < j){
+            int_swap(array, i, j);
+        }
+        else{
+            break;
+        }
+    }
+
+    reverse(array, low, i - 1, MIN(leftbound - low, i - leftbound));
+    reverse(array, j, high, MIN(high - rightbound, rightbound - j + 1));
+    
+    if (i - leftbound > 1){
+        int_qsort(array, low, low + i - leftbound - 1);
+    }
+    if (rightbound - j > 0){
+        int_qsort(array, j + high - rightbound, high);
+    } 
 }
 
 void insert_sort(void *array, size_t len, size_t type_size,
